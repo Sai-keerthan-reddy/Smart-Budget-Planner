@@ -13,7 +13,7 @@ The Smart Budget Planner is a web application designed to help users manage thei
 ![Jinja2](https://img.shields.io/badge/-Jinja2-333333?style=flat&logo=Jinja2)
 ![CSS](https://img.shields.io/badge/-CSS-333333?style=flat&logo=CSS)
 
-##Goal and future Enhancements for this application
+## Goal and future Enhancements for this application
 The Smart Budget Planner application provides users with a powerful tool to manage their personal finances effectively. By tracking and categorizing expenses, users can gain insights into their spending habits. The visualization features make it easy to understand how money is being spent, and the forecasting feature helps in planning future budgets, making it easier for users to achieve their financial goals.<br>
 In future it can be <br>
 >> integrated with Payment gateways to direct entries of the transactions to the application avoiding manullay <br>
