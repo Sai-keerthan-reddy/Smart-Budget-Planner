@@ -4,7 +4,7 @@ The Smart Budget Planner is a web application designed to help users manage thei
 ## Technologies and Tools
 ![Python](https://img.shields.io/badge/-Python-333333?style=flat&logo=python)
 ![FLASK](https://img.shields.io/badge/-FLASK-333333?style=flat&logo=FLASK)
-![SCIKIT-LEARN](https://img.shields.io/badge/-SCIKIT-LEARN-333333?style=flat&logo=SCIKIT-LEARN)
+![SCIKIT-LEARN](https://img.shields.io/badge/-SCIKITLEARN-333333?style=flat&logo=SCIKIT-LEARN)
 ![MATPLOTLIB](https://img.shields.io/badge/-MATPLOTLIB-333333?style=flat&logo=MATPLOTLIB)
 ![PANDAS](https://img.shields.io/badge/-PANDAS-333333?style=flat&logo=PANDAS)
 ![SQLite](https://img.shields.io/badge/-SQLite-333333?style=flat&logo=SQLite)
