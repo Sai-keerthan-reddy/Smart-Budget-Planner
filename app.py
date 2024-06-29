@@ -141,7 +141,7 @@ def forecast_expenses():
     df['date'] = df['date'].fillna(default_date)
     
     df['date_ordinal'] = df['date'].apply(lambda x: x.toordinal())  # Convert dates to ordinal for model training
-    model = RandomForestRegressor()  # Initialize the Linear Regression model
+    model = LinearRegression()  # Initialize the Linear Regression model
     model.fit(df[['date_ordinal']], df['amount'])  # Fit the model
     future_dates = pd.date_range('2024-07-01', periods=3, freq='M')  # Generate future dates for prediction
     future_ordinals = np.array([date.toordinal() for date in future_dates]).reshape(-1, 1)  # Convert future dates to ordinals
