@@ -4,16 +4,35 @@
 <head>
     <meta charset="UTF-8">
     <title>Search Expenses</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Search Expenses</h1>
+    <a href="{{ url_for('home') }}">Back to Home</a> <!-- Link to return to the home page -->
     <!-- Search form that can submit both GET and POST requests -->
     <form action="{{ url_for('search') }}" method="post">
         <div>
             <label for="category">Category:</label>
-            <select name="category_id" id="category">
-                <option value="">--Select a Category--</option>
+            <select name="category_id">
+                <option value="">Select Category</option>
                 {% for category in categories %}
                 <option value="{{ category.id }}">{{ category.name }}</option>
                 {% endfor %}
@@ -35,7 +54,8 @@
     {% if expenses %}
     <ul>
         {% for expense in expenses %}
-        <li>{{ expense.name }} - ${{ expense.amount }} - Date: {{ expense.date }}</li>
+        <!-- Include category name if available -->
+        <li>{{ expense.name }} - ${{ expense.amount }} - {{ expense.category_name }} - Date: {{ expense.date }}</li>
         {% endfor %}
     </ul>
     {% else %}

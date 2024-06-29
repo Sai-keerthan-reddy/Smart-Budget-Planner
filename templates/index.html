@@ -3,6 +3,21 @@
 
 <head>
     <title>Smart Budget Planner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -19,13 +34,24 @@
         <input type="date" name="date" required>
         <button type="submit">Add Expense</button>
     </form>
+
     <h2>Expenses:</h2>
     <ul>
         {% for expense in expenses %}
-        <li>{{ expense[1] }}: ${{ expense[2] }}</li>
+        <li>{{ expense.name }}: ${{ expense.amount }} - {{ expense.category_name }} on {{ expense.date }}</li>
         {% endfor %}
     </ul>
-    <section><img src="{{ url_for('expense_chart') }}" alt="Expense Distribution Chart"></section>
+
+    <section>
+        <h2>Expense Distribution Chart</h2>
+        <img src="{{ url_for('expense_chart') }}" alt="Expense Distribution Chart">
+    </section>
+
+    <section>
+        <h2>More Reports</h2>
+        <a href="{{ url_for('monthly_summary') }}">View Monthly Summary</a> |
+        <a href="{{ url_for('forecast_expenses') }}">Forecast Expenses</a>
+    </section>
 
 </body>
 

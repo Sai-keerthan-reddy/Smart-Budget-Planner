@@ -3,30 +3,33 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 import sqlite3
 import matplotlib.pyplot as plt
 import io
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+import numpy as np
 
 # Initialize the Flask application
 app = Flask(__name__)
-DATABASE = 'budget.db'
+DATABASE = 'budget.db'  # Database file location
 
 def get_db():
-    # Establish a connection to the specified SQLite database
+    """Establish and return a connection to the SQLite database with rows as dictionaries."""
     conn = sqlite3.connect(DATABASE)
-    # Configure the connection to return rows as dictionaries to access columns by names
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row  # Allows accessing columns by name
     return conn
 
 def init_db():
-    # Initialize the database with predefined tables and data
-    db = get_db()
+    """Initialize the database tables and prepopulate some data."""
+    db = get_db()  # Obtain a database connection
     with db:
-        # Create categories table if it doesn't exist
+        # Execute SQL to create categories table if it doesn't exist
         db.execute('''
             CREATE TABLE IF NOT EXISTS categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL
             )
         ''')
-        # Create expenses table if it doesn't exist with a new 'date' column
+        # Execute SQL to create expenses table if it doesn't exist with a date column
         db.execute('''
             CREATE TABLE IF NOT EXISTS expenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +40,7 @@ def init_db():
                 FOREIGN KEY (category_id) REFERENCES categories(id)
             )
         ''')
-        # Prepopulate the categories table with default values if not already present
+        # Insert default values into the categories table if they are not already present
         db.execute("INSERT OR IGNORE INTO categories (name) VALUES ('Food')")
         db.execute("INSERT OR IGNORE INTO categories (name) VALUES ('Utilities')")
         db.execute("INSERT OR IGNORE INTO categories (name) VALUES ('Entertainment')")
@@ -45,82 +48,113 @@ def init_db():
 
 @app.route('/')
 def home():
-    # Route to display all expenses with their categories
+    """Route to display all expenses with their categories on the homepage."""
     db = get_db()
     expenses = db.execute("SELECT expenses.*, categories.name AS category_name FROM expenses JOIN categories ON expenses.category_id = categories.id").fetchall()
-    categories = db.execute("SELECT * FROM categories").fetchall()
-    return render_template('index.html', expenses=expenses, categories=categories)
+    categories = db.execute("SELECT * FROM categories").fetchall()  # Ensure this line is fetching categories
+    return render_template('index.html', expenses=expenses,categories=categories)
 
 @app.route('/add', methods=['POST'])
 def add_expense():
-    # Route to add a new expense to the database
+    """Route to handle the addition of new expenses through the web form."""
     db = get_db()
     name = request.form['name']
     amount = request.form['amount']
     category_id = request.form.get('category_id')
-    date = request.form.get('date')  # Retrieve date from form
-    if category_id and date:
-        db.execute("INSERT INTO expenses (name, amount, category_id, date) VALUES (?, ?, ?, ?)", (name, amount, category_id, date))
-    db.commit()
+    date = request.form.get('date')
+    # Insert the new expense record into the database if all fields are provided
+    if name and amount and category_id and date:
+        db.execute("INSERT INTO expenses (name, amount, category_id, date) VALUES (?, ?, ?, ?)",
+                   (name, amount, category_id, date))
+        db.commit()
     return redirect(url_for('home'))
 
 @app.route('/expense_chart')
 def expense_chart():
-    # Route to generate a pie chart of expenses by category
-    try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT categories.name, SUM(expenses.amount) AS total FROM expenses JOIN categories ON expenses.category_id = categories.id GROUP BY categories.name")
-        results = cursor.fetchall()
-
-        if not results:
-            return jsonify({"error": "No data available for chart."}), 404
-
-        labels = [i['name'] for i in results]
-        sizes = [i['total'] for i in results]
-
-        fig, ax = plt.subplots()
-        ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-        ax.axis('equal')
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-
-        return send_file(buf, mimetype='image/png')
-    except Exception as e:
-        return str(e), 500
+    """Route to generate a pie chart displaying expenses grouped by category."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT categories.name, SUM(expenses.amount) AS total FROM expenses JOIN categories ON expenses.category_id = categories.id GROUP BY categories.name")
+    results = cursor.fetchall()
+    if not results:
+        return jsonify({"error": "No data available for chart."}), 404
+    labels = [result['name'] for result in results]  # List of category names
+    sizes = [result['total'] for result in results]  # Corresponding totals of expenses
+    fig, ax = plt.subplots()  # Create a figure and a set of subplots
+    ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)  # Create a pie chart
+    ax.axis('equal')  # Equal aspect ratio ensures that the pie is drawn as a circle
+    buf = io.BytesIO()  # Create a buffer to hold the image
+    plt.savefig(buf, format='png')  # Save the pie chart as a PNG image to the buffer
+    buf.seek(0)  # Seek to the start of the stream
+    return send_file(buf, mimetype='image/png')  # Return the image as a response
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
-    # Route to handle searching expenses based on category and date
+    """Route to handle searching of expenses by category and/or date range."""
     db = get_db()
-    query = "SELECT * FROM expenses WHERE 1=1"
-    params = []
-    
-    # Choose data source based on the method: form data for POST, query string for GET
+    query = "SELECT * FROM expenses WHERE 1=1"  # SQL query starting point
+    params = []  # Parameters for the SQL query
     data_source = request.form if request.method == 'POST' else request.args
-
     category_id = data_source.get('category_id')
     if category_id:
-        query += " AND category_id = ?"
+        query += " AND category_id = ?"  # Append category condition to the query
         params.append(int(category_id))
-
     start_date = data_source.get('start_date')
     if start_date:
-        query += " AND date >= ?"
+        query += " AND date >= ?"  # Append start date condition to the query
         params.append(start_date)
-
     end_date = data_source.get('end_date')
     if end_date:
-        query += " AND date <= ?"
+        query += " AND date <= ?"  # Append end date condition to the query
         params.append(end_date)
-
-    expenses = db.execute(query, params).fetchall()
+    expenses = db.execute(query, params).fetchall()  # Execute the query and fetch results
     categories = db.execute("SELECT * FROM categories").fetchall()
-    return render_template('search.html', expenses=expenses, categories=categories)
+    return render_template('search.html', expenses=expenses,categories = categories)  # Render the search results page
+
+# Additional Pandas and Scikit-Learn integration here, with detailed comments:
+@app.route('/monthly_summary')
+def monthly_summary():
+    db = get_db()
+    query = "SELECT date, amount, category_id FROM expenses"
+    df = pd.read_sql_query(query, db)  # Load data into a Pandas DataFrame
+    df['date'] = pd.to_datetime(df['date'])  # Convert date column to datetime type for easier manipulation
+
+    # Group expenses by month and category, and sum the amounts
+    summary = df.groupby([df['date'].dt.to_period('M'), 'category_id'])['amount'].sum().unstack(fill_value=0)
+
+    # Convert Period index (which is not JSON serializable) to string
+    summary.index = summary.index.astype(str)  # Convert Periods to string
+
+    return jsonify(summary.to_dict())  # Return the summary as JSON
+
+
+@app.route('/forecast_expenses', methods=['GET'])
+def forecast_expenses():
+    """Route to predict future expenses using a simple linear regression model."""
+    db = get_db()
+    query = "SELECT date, amount FROM expenses"
+    df = pd.read_sql_query(query, db)  # Load expenses into DataFrame
+    df['date'] = pd.to_datetime(df['date'])  # Ensure 'date' column is datetime type
+    
+    # Provide a default date for NaT values
+    default_date = pd.Timestamp('today')  # Use today's date or any other appropriate default
+    df['date'] = df['date'].fillna(default_date)
+    
+    df['date_ordinal'] = df['date'].apply(lambda x: x.toordinal())  # Convert dates to ordinal for model training
+    model = RandomForestRegressor()  # Initialize the Linear Regression model
+    model.fit(df[['date_ordinal']], df['amount'])  # Fit the model
+    future_dates = pd.date_range('2024-07-01', periods=3, freq='M')  # Generate future dates for prediction
+    future_ordinals = np.array([date.toordinal() for date in future_dates]).reshape(-1, 1)  # Convert future dates to ordinals
+    predictions = model.predict(future_ordinals)  # Predict expenses for future dates
+    
+     # Prepare data for JSON serialization
+    response_data = {
+        'date': [date.strftime('%Y-%m-%d') for date in future_dates],
+        'prediction': predictions.tolist()
+    }
+
+    return jsonify(response_data)
 
 if __name__ == '__main__':
-    # Initialize the database and start the Flask application in debug mode
-    init_db()
-    app.run(debug=True)
+    init_db()  # Ensure the database is initialized
+    app.run(debug=True)  # Start the Flask app in debug mode for development purposes
