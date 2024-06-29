@@ -3,21 +3,44 @@
 
 <head>
     <meta charset="UTF-8">
+    <title>Search Expenses</title>
 </head>
 
-<!-- Create a form that submits to the '/search' route, using POST method. -->
-<form method="POST" action="{{ url_for('search') }}">
-    <input type="text" name="name" placeholder="Search by name">
-    <input type="number" name="amount" placeholder="Search by amount">
-    <select name="category">
-        <option value="">Select Category</option>
-        {% for category in categories %}
-        <option value="{{ category.id }}">{{ category.name }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit">Search</button>
-</form>
+<body>
+    <h1>Search Expenses</h1>
+    <!-- Search form that can submit both GET and POST requests -->
+    <form action="{{ url_for('search') }}" method="post">
+        <div>
+            <label for="category">Category:</label>
+            <select name="category_id" id="category">
+                <option value="">--Select a Category--</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date">
+        </div>
+        <div>
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date">
+        </div>
+        <button type="submit">Search</button>
+    </form>
 
-</form>
+    <!-- Results section -->
+    <h2>Search Results</h2>
+    {% if expenses %}
+    <ul>
+        {% for expense in expenses %}
+        <li>{{ expense.name }} - ${{ expense.amount }} - Date: {{ expense.date }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No expenses found.</p>
+    {% endif %}
+</body>
 
 </html>
